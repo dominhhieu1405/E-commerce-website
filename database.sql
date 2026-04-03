@@ -43,8 +43,6 @@ CREATE TABLE IF NOT EXISTS product_variants (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   product_id INT UNSIGNED NOT NULL,
   variant_name VARCHAR(120) NOT NULL,
-  color VARCHAR(60) DEFAULT NULL,
-  size VARCHAR(60) DEFAULT NULL,
   additional_price DECIMAL(10,2) NOT NULL DEFAULT 0,
   stock INT UNSIGNED NOT NULL DEFAULT 0,
   CONSTRAINT fk_variants_product_id FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
@@ -121,11 +119,11 @@ VALUES
 (1, 'Urban Hoodie', '<p>Hoodie nỉ dày, phom rộng nhẹ, phù hợp thời tiết mát.</p>', 39.00, 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=800&q=80', JSON_ARRAY('https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=800&q=80'), 35),
 (2, 'Everyday Sneakers', '<p>Giày sneaker tối giản, đế êm, dễ phối đồ.</p>', 59.50, 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80', JSON_ARRAY('https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80'), 20);
 
-INSERT INTO product_variants (product_id, variant_name, color, size, additional_price, stock)
+INSERT INTO product_variants (product_id, variant_name, additional_price, stock)
 VALUES
-(1, 'Tee - White M', 'White', 'M', 0, 15),
-(1, 'Tee - Black L', 'Black', 'L', 1.50, 12),
-(3, 'Sneaker - White 42', 'White', '42', 0, 8);
+(1, 'Tee - White', 0, 15),
+(1, 'Tee - Black', 1.50, 12),
+(3, 'Sneaker - Basic', 0, 8);
 
 INSERT INTO users (username, password, email, role)
 VALUES ('admin', '$2y$12$qQ1U7LqyIfaHxRyziXQyIOqNI/7KuvYlp.H0nCa6OhOpvYpdLA4cW', 'admin@minimalstore.local', 'admin');

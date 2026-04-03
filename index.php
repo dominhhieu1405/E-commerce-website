@@ -3,9 +3,18 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/includes/pagination.php';
 $pageTitle = 'Trang chủ | Minimal Store';
 
-$stmt = $pdo->query('SELECT id, name, description, price, image_url, stock, category_id FROM products ORDER BY created_at DESC');
+$currentPage = max(1, (int) ($_GET['page'] ?? 1));
+$perPage = 9;
+$totalProducts = (int) $pdo->query('SELECT COUNT(*) FROM products')->fetchColumn();
+$pagination = paginate($totalProducts, $perPage, $currentPage);
+
+$stmt = $pdo->prepare('SELECT id, name, description, price, image_url, stock, category_id FROM products ORDER BY created_at DESC LIMIT :limit OFFSET :offset');
+$stmt->bindValue(':limit', (int) $pagination['per_page'], PDO::PARAM_INT);
+$stmt->bindValue(':offset', (int) $pagination['offset'], PDO::PARAM_INT);
+$stmt->execute();
 $products = $stmt->fetchAll();
 
 require_once __DIR__ . '/includes/header.php';
@@ -55,5 +64,7 @@ require_once __DIR__ . '/includes/header.php';
       </article>
     <?php endforeach; ?>
   </div>
+
+  <?php render_pagination($pagination); ?>
 </section>
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

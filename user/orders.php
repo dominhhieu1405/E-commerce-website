@@ -4,19 +4,31 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/pagination.php';
 require_login();
 
 $pageTitle = 'Đơn hàng đã mua';
 $user = current_user();
+
+$currentPage = max(1, (int) ($_GET['page'] ?? 1));
+$perPage = 10;
+$countStmt = $pdo->prepare('SELECT COUNT(*) FROM orders WHERE user_id = :user_id');
+$countStmt->execute(['user_id' => (int) $user['id']]);
+$totalOrders = (int) $countStmt->fetchColumn();
+$pagination = paginate($totalOrders, $perPage, $currentPage);
 
 $stmt = $pdo->prepare(
     'SELECT o.*, r.id AS review_id
      FROM orders o
      LEFT JOIN reviews r ON r.order_id = o.id
      WHERE o.user_id = :user_id
-     ORDER BY o.created_at DESC'
+     ORDER BY o.created_at DESC
+     LIMIT :limit OFFSET :offset'
 );
-$stmt->execute(['user_id' => (int) $user['id']]);
+$stmt->bindValue(':user_id', (int) $user['id'], PDO::PARAM_INT);
+$stmt->bindValue(':limit', (int) $pagination['per_page'], PDO::PARAM_INT);
+$stmt->bindValue(':offset', (int) $pagination['offset'], PDO::PARAM_INT);
+$stmt->execute();
 $orders = $stmt->fetchAll();
 
 require_once __DIR__ . '/../includes/header.php';
@@ -55,5 +67,7 @@ require_once __DIR__ . '/../includes/header.php';
       </tbody>
     </table>
   </div>
+
+  <?php render_pagination($pagination); ?>
 </section>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

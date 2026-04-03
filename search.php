@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/includes/pagination.php';
 $pageTitle = 'Tìm kiếm sản phẩm';
 
 $q = trim((string) ($_GET['q'] ?? ''));
@@ -47,15 +48,28 @@ if ($inStock) {
 }
 
 $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+$currentPage = max(1, (int) ($_GET['page'] ?? 1));
+$perPage = 9;
+
+$countStmt = $pdo->prepare("SELECT COUNT(*) FROM products p {$whereSql}");
+$countStmt->execute($params);
+$totalProducts = (int) $countStmt->fetchColumn();
+$pagination = paginate($totalProducts, $perPage, $currentPage);
 
 $sql = "SELECT p.id, p.name, p.description, p.price, p.image_url, p.stock, c.name AS category_name
         FROM products p
         LEFT JOIN categories c ON c.id = p.category_id
         {$whereSql}
-        ORDER BY {$orderBy}";
+        ORDER BY {$orderBy}
+        LIMIT :limit OFFSET :offset";
 
 $stmt = $pdo->prepare($sql);
-$stmt->execute($params);
+foreach ($params as $key => $value) {
+    $stmt->bindValue(':' . $key, $value);
+}
+$stmt->bindValue(':limit', (int) $pagination['per_page'], PDO::PARAM_INT);
+$stmt->bindValue(':offset', (int) $pagination['offset'], PDO::PARAM_INT);
+$stmt->execute();
 $products = $stmt->fetchAll();
 $categories = $pdo->query('SELECT id, name FROM categories ORDER BY name ASC')->fetchAll();
 
@@ -111,7 +125,7 @@ require_once __DIR__ . '/includes/header.php';
     </div>
   </form>
 
-  <p class="text-sm text-gray-600">Tìm thấy <strong><?= count($products); ?></strong> sản phẩm.</p>
+  <p class="text-sm text-gray-600">Tìm thấy <strong><?= $totalProducts; ?></strong> sản phẩm.</p>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
     <?php if (!$products): ?>
@@ -136,5 +150,7 @@ require_once __DIR__ . '/includes/header.php';
       </article>
     <?php endforeach; ?>
   </div>
+
+  <?php render_pagination($pagination); ?>
 </section>
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

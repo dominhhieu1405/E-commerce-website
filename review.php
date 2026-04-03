@@ -33,8 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $rating = (int) ($_POST['rating'] ?? 0);
         $comment = trim((string) ($_POST['comment'] ?? ''));
-        if ($rating < 0 || $rating > 5 || $comment === '') {
-            $message = 'Vui lòng nhập đánh giá hợp lệ (0-5 sao).';
+        if ($rating < 1 || $rating > 5 || $comment === '') {
+            $message = 'Vui lòng nhập đánh giá hợp lệ (1-5 sao).';
         } else {
             $insert = $pdo->prepare('INSERT INTO reviews (order_id, user_id, rating, comment) VALUES (:order_id, :user_id, :rating, :comment)');
             $insert->execute([
@@ -59,8 +59,13 @@ require_once __DIR__ . '/includes/header.php';
       <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8'); ?>" />
       <input type="hidden" name="order_id" value="<?= (int) $orderId; ?>" />
       <div>
-        <label class="text-sm">Số sao (0-5)</label>
-        <input type="number" name="rating" min="0" max="5" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
+        <label class="text-sm block mb-2">Số sao</label>
+        <input type="hidden" name="rating" id="rating-input" required />
+        <div class="flex items-center gap-1 text-3xl" id="star-rating">
+          <?php for ($star = 1; $star <= 5; $star++): ?>
+            <button type="button" class="rating-star text-gray-300" data-value="<?= $star; ?>">★</button>
+          <?php endfor; ?>
+        </div>
       </div>
       <div>
         <label class="text-sm">Nhận xét</label>
@@ -70,4 +75,23 @@ require_once __DIR__ . '/includes/header.php';
     </form>
   </div>
 </section>
+<script>
+  const stars = document.querySelectorAll('.rating-star');
+  const ratingInput = document.querySelector('#rating-input');
+
+  function paintStars(active) {
+    stars.forEach((star, index) => {
+      star.classList.toggle('text-yellow-400', index < active);
+      star.classList.toggle('text-gray-300', index >= active);
+    });
+  }
+
+  stars.forEach((star) => {
+    star.addEventListener('click', () => {
+      const value = Number(star.dataset.value || 0);
+      ratingInput.value = String(value);
+      paintStars(value);
+    });
+  });
+</script>
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

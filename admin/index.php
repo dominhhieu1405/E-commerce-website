@@ -35,7 +35,9 @@ require_once __DIR__ . '/../includes/header.php';
   </div>
 
   <div class="flex gap-3">
-    <a href="/admin/products.php" class="rounded-lg border border-black px-4 py-2 hover:opacity-80 transition">Quản lý sản phẩm</a>
+    <a href="/admin/products.php" class="rounded-lg border border-black px-4 py-2 hover:opacity-80 transition">Danh sách sản phẩm</a>
+    <a href="/admin/product_form.php" class="rounded-lg border border-black px-4 py-2 hover:opacity-80 transition">Thêm sản phẩm</a>
+    <a href="/admin/categories.php" class="rounded-lg border border-black px-4 py-2 hover:opacity-80 transition">Quản lý danh mục</a>
     <a href="/admin/orders.php" class="rounded-lg border border-black px-4 py-2 hover:opacity-80 transition">Quản lý đơn hàng</a>
   </div>
 </section>
