@@ -7,7 +7,8 @@ $pageTitle = 'Tìm kiếm sản phẩm';
 
 $q = trim((string) ($_GET['q'] ?? ''));
 $minPrice = isset($_GET['min_price']) ? (float) $_GET['min_price'] : null;
-$maxPrice = isset($_GET['max_price']) ? (float) $_GET['max_price'] : null;
+$maxPrice = $_GET['max_price'] ?? 999999999;
+if (!is_numeric($maxPrice)) $maxPrice = 999999999;
 $categoryId = (int) ($_GET['category_id'] ?? 0);
 $inStock = (($_GET['in_stock'] ?? '') === '1');
 $sort = (string) ($_GET['sort'] ?? 'newest');
@@ -25,8 +26,9 @@ $where = [];
 $params = [];
 
 if ($q !== '') {
-    $where[] = '(p.name LIKE :q OR p.description LIKE :q)';
-    $params['q'] = '%' . $q . '%';
+    $where[] = '(p.name LIKE :q_name OR p.description LIKE :q_desc)';
+    $params['q_name'] = '%' . $q . '%';
+    $params['q_desc'] = '%' . $q . '%';
 }
 if ($categoryId > 0) {
     $where[] = 'p.category_id = :category_id';
