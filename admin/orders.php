@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/pagination.php';
 require_login();
 require_admin();
 $pageTitle = 'Admin | Đơn hàng';
@@ -27,7 +28,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-$ordersStmt = $pdo->query('SELECT * FROM orders ORDER BY created_at DESC');
+$currentPage = max(1, (int) ($_GET['page'] ?? 1));
+$perPage = 10;
+$totalOrders = (int) $pdo->query('SELECT COUNT(*) FROM orders')->fetchColumn();
+$pagination = paginate($totalOrders, $perPage, $currentPage);
+
+$ordersStmt = $pdo->prepare('SELECT * FROM orders ORDER BY created_at DESC LIMIT :limit OFFSET :offset');
+$ordersStmt->bindValue(':limit', (int) $pagination['per_page'], PDO::PARAM_INT);
+$ordersStmt->bindValue(':offset', (int) $pagination['offset'], PDO::PARAM_INT);
+$ordersStmt->execute();
 $orders = $ordersStmt->fetchAll();
 
 require_once __DIR__ . '/../includes/header.php';
@@ -75,5 +84,7 @@ require_once __DIR__ . '/../includes/header.php';
       </tbody>
     </table>
   </div>
+
+  <?php render_pagination($pagination); ?>
 </section>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
