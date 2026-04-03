@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
   username VARCHAR(50) NOT NULL UNIQUE,
   password VARCHAR(255) NOT NULL,
   email VARCHAR(150) NOT NULL UNIQUE,
+  google_id VARCHAR(100) NULL UNIQUE,
   role ENUM('admin', 'customer') NOT NULL DEFAULT 'customer',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
@@ -61,3 +62,7 @@ VALUES
 ('Minimal Tee', 'Áo thun cotton form regular với tông màu trung tính.', 19.90, 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80', 50),
 ('Urban Hoodie', 'Hoodie nỉ dày, phom rộng nhẹ, phù hợp thời tiết mát.', 39.00, 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=800&q=80', 35),
 ('Everyday Sneakers', 'Giày sneaker tối giản, đế êm, dễ phối đồ.', 59.50, 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80', 20);
+
+
+INSERT INTO users (username, password, email, role)
+VALUES ('admin', '$2y$12$qQ1U7LqyIfaHxRyziXQyIOqNI/7KuvYlp.H0nCa6OhOpvYpdLA4cW', 'admin@minimalstore.local', 'admin');

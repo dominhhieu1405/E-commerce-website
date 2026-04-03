@@ -3,10 +3,17 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_login();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     exit('Method Not Allowed');
+}
+
+if (!validate_csrf((string) ($_POST['csrf_token'] ?? ''))) {
+    http_response_code(422);
+    exit('CSRF token không hợp lệ.');
 }
 
 $customerName = trim((string) ($_POST['customer_name'] ?? ''));
@@ -59,10 +66,11 @@ try {
 
     $orderStmt = $pdo->prepare(
         'INSERT INTO orders (user_id, total_price, status, customer_name, customer_email, customer_phone, shipping_address)
-         VALUES (NULL, :total_price, :status, :customer_name, :customer_email, :customer_phone, :shipping_address)'
+         VALUES (:user_id, :total_price, :status, :customer_name, :customer_email, :customer_phone, :shipping_address)'
     );
 
     $orderStmt->execute([
+        'user_id' => (int) (current_user()['id'] ?? 0),
         'total_price' => $totalPrice,
         'status' => 'pending',
         'customer_name' => $customerName,

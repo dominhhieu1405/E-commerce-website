@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_login();
+require_admin();
 $pageTitle = 'Admin Dashboard';
 
 $summaryStmt = $pdo->query("SELECT COUNT(*) AS total_orders, COALESCE(SUM(total_price),0) AS revenue FROM orders WHERE status = 'completed'");
