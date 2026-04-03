@@ -34,6 +34,15 @@ require_once __DIR__ . '/includes/header.php';
           <textarea name="shipping_address" required rows="3" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"></textarea>
         </div>
 
+        <div>
+          <label class="text-sm">Phương thức thanh toán</label>
+          <select name="payment_method" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2">
+            <option value="cod">COD</option>
+            <option value="visa">Visa</option>
+            <option value="bank_transfer">Chuyển khoản</option>
+          </select>
+        </div>
+
         <button class="w-full rounded-lg bg-black text-white px-4 py-2 hover:opacity-80 transition">Đặt hàng</button>
       </form>
     </div>

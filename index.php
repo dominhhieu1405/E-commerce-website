@@ -5,17 +5,12 @@ declare(strict_types=1);
 require_once __DIR__ . '/config/db.php';
 $pageTitle = 'Trang chủ | Minimal Store';
 
-$stmt = $pdo->query('SELECT id, name, description, price, image_url, stock FROM products ORDER BY created_at DESC');
+$stmt = $pdo->query('SELECT id, name, description, price, image_url, stock, category_id FROM products ORDER BY created_at DESC');
 $products = $stmt->fetchAll();
 
 require_once __DIR__ . '/includes/header.php';
 ?>
 <section class="max-w-6xl mx-auto px-4 py-8">
-  <form method="get" action="/search.php" class="mb-6 bg-white rounded-lg border border-gray-200 p-3 flex gap-2">
-    <input type="text" name="q" placeholder="Tìm sản phẩm nhanh..." class="flex-1 rounded-lg border border-gray-300 px-3 py-2" />
-    <button class="rounded-lg bg-black text-white px-4 py-2 text-sm hover:opacity-80 transition">Tìm</button>
-  </form>
-
   <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-8">
     <div>
       <h1 class="text-3xl font-bold">Sản phẩm mới</h1>
@@ -39,7 +34,7 @@ require_once __DIR__ . '/includes/header.php';
             <?= htmlspecialchars((string) $product['name'], ENT_QUOTES, 'UTF-8'); ?>
           </h2>
           <p class="text-sm text-gray-500 min-h-[44px]">
-            <?= htmlspecialchars((string) mb_strimwidth($product['description'], 0, 95, '...'), ENT_QUOTES, 'UTF-8'); ?>
+            <?= htmlspecialchars((string) mb_strimwidth(strip_tags((string) $product['description']), 0, 95, '...'), ENT_QUOTES, 'UTF-8'); ?>
           </p>
           <div class="flex items-center justify-between">
             <p class="font-bold">$<?= number_format((float) $product['price'], 2); ?></p>
