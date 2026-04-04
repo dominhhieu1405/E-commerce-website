@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 $host = '127.0.0.1';
-$dbname = 'ecommerce_store';
-$username = 'root';
-$password = '';
+$dbname = 'store_demo';
+$username = 'store_demo';
+$password = 'KxLFTW37HrsNi6xE';
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host={$host};dbname={$dbname};charset={$charset}";
