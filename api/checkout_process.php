@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth.php';
-require_login();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -32,11 +31,13 @@ if (!is_array($cartItems)) {
     $cartItems = [];
 }
 
-$userId = (int) (current_user()['id'] ?? 0);
+$userId = is_logged_in() ? (int) (current_user()['id'] ?? 0) : null;
 if (count($cartItems) === 0) {
-    $cartStmt = $pdo->prepare('SELECT ci.product_id AS id, ci.quantity FROM carts c INNER JOIN cart_items ci ON ci.cart_id = c.id WHERE c.user_id = :user_id');
-    $cartStmt->execute(['user_id' => $userId]);
-    $cartItems = $cartStmt->fetchAll();
+    if ($userId) {
+        $cartStmt = $pdo->prepare('SELECT ci.product_id AS id, ci.variant_id, ci.quantity FROM carts c INNER JOIN cart_items ci ON ci.cart_id = c.id WHERE c.user_id = :user_id');
+        $cartStmt->execute(['user_id' => $userId]);
+        $cartItems = $cartStmt->fetchAll();
+    }
 }
 
 if (!$customerName || !$customerEmail || !$customerPhone || !$shippingAddress || count($cartItems) === 0) {
@@ -50,11 +51,12 @@ try {
     $totalPrice = 0.0;
     $validatedItems = [];
     $checkProductStmt = $pdo->prepare('SELECT id, price, stock FROM products WHERE id = :id FOR UPDATE');
+    $checkVariantStmt = $pdo->prepare('SELECT id, additional_price, stock FROM product_variants WHERE id = :id AND product_id = :product_id FOR UPDATE');
 
     foreach ($cartItems as $item) {
         $productId = (int) ($item['id'] ?? 0);
         $quantity = (int) ($item['quantity'] ?? 0);
-        $variantId = isset($item['variant_id']) ? (int) $item['variant_id'] : null;
+        $variantId = isset($item['variant_id']) ? (int) $item['variant_id'] : (isset($item['variantId']) ? (int) $item['variantId'] : null);
 
         if ($productId <= 0 || $quantity <= 0) {
             throw new RuntimeException('Dữ liệu giỏ hàng không hợp lệ.');
@@ -67,7 +69,17 @@ try {
             throw new RuntimeException('Sản phẩm không tồn tại hoặc không đủ tồn kho.');
         }
 
-        $linePrice = (float) $product['price'];
+        $additionalPrice = 0.0;
+        if ($variantId) {
+            $checkVariantStmt->execute(['id' => $variantId, 'product_id' => $productId]);
+            $variant = $checkVariantStmt->fetch();
+            if (!$variant || (int) $variant['stock'] < $quantity) {
+                throw new RuntimeException('Biến thể không tồn tại hoặc không đủ tồn kho.');
+            }
+            $additionalPrice = (float) $variant['additional_price'];
+        }
+
+        $linePrice = (float) $product['price'] + $additionalPrice;
         $totalPrice += $linePrice * $quantity;
 
         $validatedItems[] = [
@@ -103,6 +115,7 @@ try {
     );
 
     $stockUpdateStmt = $pdo->prepare('UPDATE products SET stock = stock - :quantity WHERE id = :id');
+    $variantStockUpdateStmt = $pdo->prepare('UPDATE product_variants SET stock = stock - :quantity WHERE id = :id');
 
     foreach ($validatedItems as $validatedItem) {
         $orderItemStmt->execute([
@@ -117,10 +130,27 @@ try {
             'quantity' => $validatedItem['quantity'],
             'id' => $validatedItem['product_id'],
         ]);
+
+        if (!empty($validatedItem['variant_id'])) {
+            $variantStockUpdateStmt->execute([
+                'quantity' => $validatedItem['quantity'],
+                'id' => $validatedItem['variant_id'],
+            ]);
+        }
     }
 
-    $clearCart = $pdo->prepare('DELETE ci FROM cart_items ci INNER JOIN carts c ON c.id = ci.cart_id WHERE c.user_id = :user_id');
-    $clearCart->execute(['user_id' => $userId]);
+    if ($userId) {
+        $saveProfileStmt = $pdo->prepare('UPDATE users SET full_name = :full_name, phone = :phone, address = :address WHERE id = :id');
+        $saveProfileStmt->execute([
+            'full_name' => $customerName,
+            'phone' => $customerPhone,
+            'address' => $shippingAddress,
+            'id' => $userId,
+        ]);
+
+        $clearCart = $pdo->prepare('DELETE ci FROM cart_items ci INNER JOIN carts c ON c.id = ci.cart_id WHERE c.user_id = :user_id');
+        $clearCart->execute(['user_id' => $userId]);
+    }
 
     $pdo->commit();
 

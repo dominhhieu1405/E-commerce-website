@@ -1,5 +1,6 @@
 const CART_KEY = 'minimal_store_cart';
 const COOKIE_KEY = 'guest_cart';
+const CHECKOUT_INFO_KEY = 'minimal_store_checkout_info';
 const USER_ID = Number(document.body?.dataset?.userId || 0);
 
 const getCookie = (name) => {
@@ -40,7 +41,7 @@ const fetchServerCart = async () => {
 };
 
 const addServerCart = async (product) => {
-  await fetch('/api/cart.php', {
+  const response = await fetch('/api/cart.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -50,6 +51,10 @@ const addServerCart = async (product) => {
       quantity: 1,
     }),
   });
+  const data = await response.json();
+  if (!response.ok || !data.ok) {
+    throw new Error(data.message || 'Không thể thêm sản phẩm vào giỏ.');
+  }
 };
 
 const clearServerCart = async () => {
@@ -80,9 +85,13 @@ const saveCart = async (cart) => {
 
 const addToCart = async (product) => {
   if (USER_ID) {
-    await addServerCart(product);
-    await saveCart([]);
-    showToast('Đã thêm vào giỏ (đồng bộ tài khoản).');
+    try {
+      await addServerCart(product);
+      await saveCart([]);
+      showToast('Đã thêm vào giỏ (đồng bộ tài khoản).');
+    } catch (error) {
+      showToast(error.message || 'Thêm giỏ hàng thất bại.');
+    }
     return;
   }
 
@@ -126,6 +135,7 @@ const renderCheckoutItems = async () => {
       <img src="${item.image}" alt="${item.name}" class="h-16 w-16 rounded-lg object-cover" />
       <div class="flex-1">
         <p class="font-medium">${item.name}</p>
+        ${item.variant_name || item.variantId ? `<p class="text-xs text-gray-500">Phân loại: ${item.variant_name || 'Biến thể'}</p>` : ''}
         <p class="text-sm text-gray-500">$${Number(item.price).toFixed(2)}</p>
       </div>
       <span class="text-sm">x${item.quantity}</span>
@@ -136,25 +146,68 @@ const renderCheckoutItems = async () => {
   hiddenInput.value = JSON.stringify(cart);
 };
 
+const loadCheckoutInfo = () => {
+  const fields = {
+    customer_name: document.querySelector('#customer-name'),
+    customer_email: document.querySelector('#customer-email'),
+    customer_phone: document.querySelector('#customer-phone'),
+    shipping_address: document.querySelector('#shipping-address'),
+  };
+
+  if (!fields.customer_name) return;
+
+  try {
+    const raw = localStorage.getItem(CHECKOUT_INFO_KEY);
+    const data = raw ? JSON.parse(raw) : {};
+    Object.entries(fields).forEach(([key, input]) => {
+      if (input && !input.value && data[key]) {
+        input.value = data[key];
+      }
+    });
+  } catch {
+    // noop
+  }
+
+  Object.entries(fields).forEach(([key, input]) => {
+    if (!input) return;
+    input.addEventListener('input', () => {
+      try {
+        const raw = localStorage.getItem(CHECKOUT_INFO_KEY);
+        const data = raw ? JSON.parse(raw) : {};
+        data[key] = input.value;
+        localStorage.setItem(CHECKOUT_INFO_KEY, JSON.stringify(data));
+      } catch {
+        // noop
+      }
+    });
+  });
+};
+
 document.addEventListener('click', async (event) => {
   const addButton = event.target.closest('.add-to-cart');
   if (!addButton) return;
 
   const variantSelect = document.querySelector('#variant-select');
   const variantId = variantSelect ? Number(variantSelect.value || 0) || null : null;
+  const selectedOption = variantSelect?.selectedOptions?.[0] || null;
+  const additionalPrice = Number(selectedOption?.dataset?.additionalPrice || 0);
+  const variantName = selectedOption?.dataset?.variantName || null;
+  const basePrice = Number(addButton.dataset.price);
 
   await addToCart({
     id: Number(addButton.dataset.id),
     name: addButton.dataset.name,
-    price: Number(addButton.dataset.price),
+    price: basePrice + (variantId ? additionalPrice : 0),
     image: addButton.dataset.image,
     variantId,
+    variant_name: variantName,
   });
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
   await updateCartCounter();
   await renderCheckoutItems();
+  loadCheckoutInfo();
 
   const successContainer = document.querySelector('#order-success-sync');
   if (successContainer) {
