@@ -56,10 +56,14 @@ $countStmt->execute($params);
 $totalProducts = (int) $countStmt->fetchColumn();
 $pagination = paginate($totalProducts, $perPage, $currentPage);
 
-$sql = "SELECT p.id, p.name, p.description, p.price, p.image_url, p.stock, c.name AS category_name
+$sql = "SELECT p.id, p.name, p.description, p.price, p.image_url, p.stock, c.name AS category_name,
+               COALESCE(SUM(CASE WHEN o.status <> 'cancelled' THEN oi.quantity ELSE 0 END), 0) AS sold_count
         FROM products p
         LEFT JOIN categories c ON c.id = p.category_id
+        LEFT JOIN order_items oi ON oi.product_id = p.id
+        LEFT JOIN orders o ON o.id = oi.order_id
         {$whereSql}
+        GROUP BY p.id, c.name
         ORDER BY {$orderBy}
         LIMIT :limit OFFSET :offset";
 
@@ -135,7 +139,7 @@ require_once __DIR__ . '/includes/header.php';
     <?php foreach ($products as $product): ?>
       <article class="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
         <a href="/product.php?id=<?= (int) $product['id']; ?>">
-          <img src="<?= htmlspecialchars((string) ($product['image_url'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" alt="<?= htmlspecialchars((string) $product['name'], ENT_QUOTES, 'UTF-8'); ?>" class="h-52 w-full object-cover" />
+          <img src="<?= htmlspecialchars((string) ($product['image_url'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" alt="<?= htmlspecialchars((string) $product['name'], ENT_QUOTES, 'UTF-8'); ?>" class="aspect-square w-full object-cover" />
         </a>
         <div class="p-4 space-y-3">
           <p class="text-xs text-gray-500"><?= htmlspecialchars((string) ($product['category_name'] ?? 'Chưa phân loại'), ENT_QUOTES, 'UTF-8'); ?></p>
@@ -143,7 +147,7 @@ require_once __DIR__ . '/includes/header.php';
           <p class="text-sm text-gray-500 min-h-[44px]"><?= htmlspecialchars((string) mb_strimwidth(strip_tags((string) $product['description']), 0, 95, '...'), ENT_QUOTES, 'UTF-8'); ?></p>
           <div class="flex items-center justify-between">
             <p class="font-bold">$<?= number_format((float) $product['price'], 2); ?></p>
-            <span class="text-xs text-gray-500">Kho: <?= (int) $product['stock']; ?></span>
+            <span class="text-xs text-gray-500">Đã bán: <?= (int) $product['sold_count']; ?></span>
           </div>
           <button type="button" class="add-to-cart w-full rounded-lg border border-black px-3 py-2 text-sm font-medium hover:opacity-80 transition" data-id="<?= (int) $product['id']; ?>" data-name="<?= htmlspecialchars((string) $product['name'], ENT_QUOTES, 'UTF-8'); ?>" data-price="<?= (float) $product['price']; ?>" data-image="<?= htmlspecialchars((string) ($product['image_url'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" data-stock="<?= (int) $product['stock']; ?>">Thêm vào giỏ</button>
         </div>

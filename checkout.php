@@ -3,8 +3,26 @@
 declare(strict_types=1);
 
 $pageTitle = 'Thanh toán';
+require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/auth.php';
-require_login();
+
+$profile = [
+  'full_name' => '',
+  'email' => '',
+  'phone' => '',
+  'address' => '',
+];
+
+if (is_logged_in()) {
+  $user = current_user();
+  $profileStmt = $pdo->prepare('SELECT full_name, email, phone, address FROM users WHERE id = :id LIMIT 1');
+  $profileStmt->execute(['id' => (int) ($user['id'] ?? 0)]);
+  $fetchedProfile = $profileStmt->fetch();
+  if ($fetchedProfile) {
+    $profile = $fetchedProfile;
+  }
+}
+
 require_once __DIR__ . '/includes/header.php';
 ?>
 <section class="max-w-6xl mx-auto px-4 py-8">
@@ -19,19 +37,19 @@ require_once __DIR__ . '/includes/header.php';
 
         <div>
           <label class="text-sm">Họ tên</label>
-          <input name="customer_name" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
+          <input id="customer-name" name="customer_name" required value="<?= htmlspecialchars((string) ($profile['full_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
         </div>
         <div>
           <label class="text-sm">Email</label>
-          <input type="email" name="customer_email" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
+          <input id="customer-email" type="email" name="customer_email" required value="<?= htmlspecialchars((string) ($profile['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
         </div>
         <div>
           <label class="text-sm">Điện thoại</label>
-          <input name="customer_phone" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
+          <input id="customer-phone" name="customer_phone" required value="<?= htmlspecialchars((string) ($profile['phone'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
         </div>
         <div>
           <label class="text-sm">Địa chỉ</label>
-          <textarea name="shipping_address" required rows="3" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"></textarea>
+          <textarea id="shipping-address" name="shipping_address" required rows="3" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"><?= htmlspecialchars((string) ($profile['address'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></textarea>
         </div>
 
         <div>

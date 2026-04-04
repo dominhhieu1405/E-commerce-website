@@ -11,7 +11,16 @@ $perPage = 9;
 $totalProducts = (int) $pdo->query('SELECT COUNT(*) FROM products')->fetchColumn();
 $pagination = paginate($totalProducts, $perPage, $currentPage);
 
-$stmt = $pdo->prepare('SELECT id, name, description, price, image_url, stock, category_id FROM products ORDER BY created_at DESC LIMIT :limit OFFSET :offset');
+$stmt = $pdo->prepare(
+    "SELECT p.id, p.name, p.description, p.price, p.image_url, p.stock, p.category_id,
+            COALESCE(SUM(CASE WHEN o.status <> 'cancelled' THEN oi.quantity ELSE 0 END), 0) AS sold_count
+     FROM products p
+     LEFT JOIN order_items oi ON oi.product_id = p.id
+     LEFT JOIN orders o ON o.id = oi.order_id
+     GROUP BY p.id
+     ORDER BY p.created_at DESC
+     LIMIT :limit OFFSET :offset"
+);
 $stmt->bindValue(':limit', (int) $pagination['per_page'], PDO::PARAM_INT);
 $stmt->bindValue(':offset', (int) $pagination['offset'], PDO::PARAM_INT);
 $stmt->execute();
@@ -35,7 +44,7 @@ require_once __DIR__ . '/includes/header.php';
           <img
             src="<?= htmlspecialchars((string) ($product['image_url'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
             alt="<?= htmlspecialchars((string) $product['name'], ENT_QUOTES, 'UTF-8'); ?>"
-            class="h-52 w-full object-cover"
+            class="aspect-square w-full object-cover"
           />
         </a>
         <div class="p-4 space-y-3">
@@ -47,7 +56,7 @@ require_once __DIR__ . '/includes/header.php';
           </p>
           <div class="flex items-center justify-between">
             <p class="font-bold">$<?= number_format((float) $product['price'], 2); ?></p>
-            <span class="text-xs text-gray-500">Kho: <?= (int) $product['stock']; ?></span>
+            <span class="text-xs text-gray-500">Đã bán: <?= (int) $product['sold_count']; ?></span>
           </div>
           <button
             type="button"
