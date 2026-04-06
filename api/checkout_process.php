@@ -19,6 +19,18 @@ $customerName = trim((string) ($_POST['customer_name'] ?? ''));
 $customerEmail = trim((string) ($_POST['customer_email'] ?? ''));
 $customerPhone = trim((string) ($_POST['customer_phone'] ?? ''));
 $shippingAddress = trim((string) ($_POST['shipping_address'] ?? ''));
+$shippingMethod = (string) ($_POST['shipping_method'] ?? 'standard');
+$shippingMethodMap = [
+    'slow' => ['label' => 'Giao hàng chậm', 'fee' => 1.5],
+    'standard' => ['label' => 'Giao hàng bình thường', 'fee' => 3.0],
+    'fast' => ['label' => 'Giao hàng nhanh', 'fee' => 6.0],
+    'express' => ['label' => 'Giao hàng hỏa tốc', 'fee' => 10.0],
+];
+if (!isset($shippingMethodMap[$shippingMethod])) {
+    $shippingMethod = 'standard';
+}
+$shippingLabel = $shippingMethodMap[$shippingMethod]['label'];
+$shippingFee = (float) $shippingMethodMap[$shippingMethod]['fee'];
 $paymentMethod = (string) ($_POST['payment_method'] ?? 'cod');
 $allowedPaymentMethods = ['visa', 'bank_transfer', 'cod'];
 if (!in_array($paymentMethod, $allowedPaymentMethods, true)) {
@@ -97,14 +109,14 @@ try {
 
     $orderStmt->execute([
         'user_id' => $userId,
-        'total_price' => $totalPrice,
+        'total_price' => $totalPrice + $shippingFee,
         'payment_method' => $paymentMethod,
         'payment_status' => $paymentMethod === 'cod' ? 'unpaid' : 'unpaid',
         'status' => $paymentMethod === 'cod' ? 'pending' : 'pending',
         'customer_name' => $customerName,
         'customer_email' => $customerEmail,
         'customer_phone' => $customerPhone,
-        'shipping_address' => $shippingAddress,
+        'shipping_address' => $shippingAddress . ' | ' . $shippingLabel,
     ]);
 
     $orderId = (int) $pdo->lastInsertId();

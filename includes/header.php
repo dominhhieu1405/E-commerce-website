@@ -72,9 +72,10 @@ $user = current_user();
 
           <!-- Search -->
           <div class="flex-1">
-            <form method="get" action="/search.php" class="w-full">
+            <form method="get" action="/search.php" class="w-full relative">
               <div class="flex items-stretch rounded-2xl border-2 border-black bg-white overflow-hidden shadow-sm">
                 <input
+                  id="live-search-input"
                   type="text"
                   name="q"
                   placeholder="Tìm sản phẩm, thương hiệu, danh mục..."
@@ -88,6 +89,7 @@ $user = current_user();
                   Tìm kiếm
                 </button>
               </div>
+              <div id="live-search-results" class="hidden absolute left-0 right-0 top-full mt-2 max-h-80 overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg z-50"></div>
             </form>
 
             <div class="hidden md:flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mt-2 px-1">

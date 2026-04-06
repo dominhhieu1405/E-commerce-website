@@ -61,6 +61,17 @@ require_once __DIR__ . '/includes/header.php';
           </select>
         </div>
 
+        <div>
+          <label class="text-sm">Loại vận chuyển</label>
+          <select id="shipping-method" name="shipping_method" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2">
+            <option value="slow">Giao hàng chậm</option>
+            <option value="standard" selected>Giao hàng bình thường</option>
+            <option value="fast">Giao hàng nhanh</option>
+            <option value="express">Giao hàng hỏa tốc</option>
+          </select>
+          <p class="mt-1 text-xs text-gray-500">Phí vận chuyển sẽ được cộng vào tổng thanh toán.</p>
+        </div>
+
         <button class="w-full rounded-lg bg-black text-white px-4 py-2 hover:opacity-80 transition">Đặt hàng</button>
       </form>
     </div>
@@ -68,6 +79,10 @@ require_once __DIR__ . '/includes/header.php';
     <aside class="bg-white rounded-lg border border-gray-200 p-5">
       <h2 class="font-semibold mb-3">Đơn hàng của bạn</h2>
       <div id="checkout-items" class="space-y-3"></div>
+      <div class="mt-4 pt-4 border-t border-gray-200 flex justify-between text-sm">
+        <span>Phí vận chuyển</span>
+        <span id="shipping-fee">$0.00</span>
+      </div>
       <div class="border-t border-gray-200 mt-4 pt-4 flex justify-between font-semibold">
         <span>Tổng thanh toán</span>
         <span id="checkout-total">$0.00</span>

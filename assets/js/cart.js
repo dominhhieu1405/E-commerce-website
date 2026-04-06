@@ -2,6 +2,12 @@ const CART_KEY = 'minimal_store_cart';
 const COOKIE_KEY = 'guest_cart';
 const CHECKOUT_INFO_KEY = 'minimal_store_checkout_info';
 const USER_ID = Number(document.body?.dataset?.userId || 0);
+const SHIPPING_FEE_MAP = {
+  slow: 1.5,
+  standard: 3.0,
+  fast: 6.0,
+  express: 10.0,
+};
 
 const getCookie = (name) => {
   const value = `; ${document.cookie}`;
@@ -116,9 +122,17 @@ const updateCartCounter = async () => {
 
 const cartTotal = (cart) => cart.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
 
+const getCurrentShippingMethod = () => {
+  const shippingSelect = document.querySelector('#shipping-method');
+  return shippingSelect?.value || 'standard';
+};
+
+const getShippingFee = (shippingMethod) => SHIPPING_FEE_MAP[shippingMethod] ?? SHIPPING_FEE_MAP.standard;
+
 const renderCheckoutItems = async () => {
   const checkoutContainer = document.querySelector('#checkout-items');
   const totalContainer = document.querySelector('#checkout-total');
+  const shippingFeeContainer = document.querySelector('#shipping-fee');
   const hiddenInput = document.querySelector('#cart-json');
   if (!checkoutContainer || !totalContainer || !hiddenInput) return;
 
@@ -126,6 +140,7 @@ const renderCheckoutItems = async () => {
   if (!cart.length) {
     checkoutContainer.innerHTML = '<p class="text-sm text-gray-500">Giỏ hàng đang trống.</p>';
     totalContainer.textContent = '$0.00';
+    if (shippingFeeContainer) shippingFeeContainer.textContent = '$0.00';
     hiddenInput.value = '[]';
     return;
   }
@@ -142,7 +157,10 @@ const renderCheckoutItems = async () => {
     </div>
   `).join('');
 
-  totalContainer.textContent = `$${cartTotal(cart).toFixed(2)}`;
+  const subtotal = cartTotal(cart);
+  const shippingFee = getShippingFee(getCurrentShippingMethod());
+  if (shippingFeeContainer) shippingFeeContainer.textContent = `$${shippingFee.toFixed(2)}`;
+  totalContainer.textContent = `$${(subtotal + shippingFee).toFixed(2)}`;
   hiddenInput.value = JSON.stringify(cart);
 };
 
@@ -152,6 +170,7 @@ const loadCheckoutInfo = () => {
     customer_email: document.querySelector('#customer-email'),
     customer_phone: document.querySelector('#customer-phone'),
     shipping_address: document.querySelector('#shipping-address'),
+    shipping_method: document.querySelector('#shipping-method'),
   };
 
   if (!fields.customer_name) return;
@@ -183,6 +202,79 @@ const loadCheckoutInfo = () => {
   });
 };
 
+const setupShippingMethodEvents = () => {
+  const shippingSelect = document.querySelector('#shipping-method');
+  if (!shippingSelect) return;
+
+  shippingSelect.addEventListener('change', async () => {
+    await renderCheckoutItems();
+  });
+};
+
+const debounce = (fn, wait = 250) => {
+  let timerId = null;
+  return (...args) => {
+    if (timerId) clearTimeout(timerId);
+    timerId = setTimeout(() => fn(...args), wait);
+  };
+};
+
+const setupLiveSearch = () => {
+  const searchInput = document.querySelector('#live-search-input');
+  const resultsContainer = document.querySelector('#live-search-results');
+  if (!searchInput || !resultsContainer) return;
+
+  const hideResults = () => {
+    resultsContainer.classList.add('hidden');
+    resultsContainer.innerHTML = '';
+  };
+
+  const renderResults = (items) => {
+    if (!items.length) {
+      resultsContainer.innerHTML = '<p class="px-3 py-2 text-sm text-gray-500">Không tìm thấy sản phẩm phù hợp.</p>';
+      resultsContainer.classList.remove('hidden');
+      return;
+    }
+
+    resultsContainer.innerHTML = items.map((item) => `
+      <a href="/product.php?id=${Number(item.id)}" class="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition">
+        <img src="${item.image_url || ''}" alt="${item.name}" class="h-10 w-10 rounded object-cover border border-gray-200" />
+        <div class="min-w-0">
+          <p class="text-sm font-medium truncate">${item.name}</p>
+          <p class="text-xs text-gray-500">$${Number(item.price || 0).toFixed(2)}</p>
+        </div>
+      </a>
+    `).join('');
+    resultsContainer.classList.remove('hidden');
+  };
+
+  const fetchResults = debounce(async (keyword) => {
+    const q = keyword.trim();
+    if (q.length < 2) {
+      hideResults();
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/live_search.php?q=${encodeURIComponent(q)}`);
+      const data = await response.json();
+      renderResults(Array.isArray(data.items) ? data.items : []);
+    } catch {
+      hideResults();
+    }
+  }, 200);
+
+  searchInput.addEventListener('input', (event) => {
+    fetchResults(event.target.value || '');
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!resultsContainer.contains(event.target) && !searchInput.contains(event.target)) {
+      hideResults();
+    }
+  });
+};
+
 document.addEventListener('click', async (event) => {
   const addButton = event.target.closest('.add-to-cart');
   if (!addButton) return;
@@ -208,6 +300,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   await updateCartCounter();
   await renderCheckoutItems();
   loadCheckoutInfo();
+  setupShippingMethodEvents();
+  setupLiveSearch();
 
   const successContainer = document.querySelector('#order-success-sync');
   if (successContainer) {

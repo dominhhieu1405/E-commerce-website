@@ -131,9 +131,9 @@ require_once __DIR__ . '/includes/header.php';
 
   <p class="text-sm text-gray-600">Tìm thấy <strong><?= $totalProducts; ?></strong> sản phẩm.</p>
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
     <?php if (!$products): ?>
-      <div class="sm:col-span-2 lg:col-span-3 bg-white rounded-lg border border-gray-200 p-6 text-gray-500">Không có kết quả phù hợp.</div>
+      <div class="col-span-2 lg:col-span-4 bg-white rounded-lg border border-gray-200 p-6 text-gray-500">Không có kết quả phù hợp.</div>
     <?php endif; ?>
 
     <?php foreach ($products as $product): ?>
