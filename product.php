@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/includes/format.php';
 $productId = (int) ($_GET['id'] ?? 0);
 $pageTitle = 'Chi tiết sản phẩm';
 
@@ -61,17 +62,17 @@ require_once __DIR__ . '/includes/header.php';
     <div class="grid md:grid-cols-2 gap-6 bg-white rounded-lg border border-gray-200 p-4 md:p-6">
       <div>
         <img id="main-image" src="<?= htmlspecialchars((string) ($images[0] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" class="rounded-lg w-full aspect-square object-cover" alt="<?= htmlspecialchars((string) $product['name'], ENT_QUOTES, 'UTF-8'); ?>" />
-        <div class="mt-3 grid grid-cols-4 gap-2">
+        <div class="mt-3 flex gap-2 overflow-x-auto whitespace-nowrap pb-1">
           <?php foreach ($images as $image): ?>
-            <img src="<?= htmlspecialchars((string) $image, ENT_QUOTES, 'UTF-8'); ?>" class="thumb aspect-square w-full rounded object-cover border cursor-pointer" alt="thumb" />
+            <img src="<?= htmlspecialchars((string) $image, ENT_QUOTES, 'UTF-8'); ?>" class="thumb h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded object-cover border cursor-pointer" alt="thumb" />
           <?php endforeach; ?>
         </div>
       </div>
       <div class="space-y-4">
         <h1 class="text-2xl font-bold"><?= htmlspecialchars((string) $product['name'], ENT_QUOTES, 'UTF-8'); ?></h1>
         <p class="text-gray-600"><?= htmlspecialchars($shortDescription, ENT_QUOTES, 'UTF-8'); ?></p>
-        <p id="product-price" class="text-2xl font-semibold" data-base-price="<?= (float) $product['price']; ?>">$<?= number_format((float) $product['price'], 2); ?></p>
-        <p class="text-sm text-gray-500">Tồn kho: <?= (int) $product['stock']; ?> • Đã bán: <?= (int) $product['sold_count']; ?></p>
+        <p id="product-price" class="text-2xl font-semibold" data-base-price="<?= (float) $product['price']; ?>"><?= format_currency_vnd((float) $product['price']); ?></p>
+        <p class="text-sm text-gray-500">Tồn kho: <?= format_number_vn((int) $product['stock']); ?> • Đã bán: <?= format_number_vn((int) $product['sold_count']); ?></p>
 
         <?php if ($variants): ?>
           <div>
@@ -79,7 +80,7 @@ require_once __DIR__ . '/includes/header.php';
             <select id="variant-select" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2">
               <?php foreach ($variants as $variant): ?>
                 <option value="<?= (int) $variant['id']; ?>" data-additional-price="<?= (float) $variant['additional_price']; ?>" data-variant-name="<?= htmlspecialchars((string) $variant['variant_name'], ENT_QUOTES, 'UTF-8'); ?>">
-                  <?= htmlspecialchars((string) $variant['variant_name'], ENT_QUOTES, 'UTF-8'); ?> (+$<?= number_format((float) $variant['additional_price'], 2); ?>) - Kho: <?= (int) $variant['stock']; ?>
+                  <?= htmlspecialchars((string) $variant['variant_name'], ENT_QUOTES, 'UTF-8'); ?> (+<?= format_currency_vnd((float) $variant['additional_price']); ?>) - Kho: <?= format_number_vn((int) $variant['stock']); ?>
                 </option>
               <?php endforeach; ?>
             </select>
@@ -148,7 +149,7 @@ require_once __DIR__ . '/includes/header.php';
       const additionalPrice = Number(selectedOption?.dataset?.additionalPrice || 0);
       const basePrice = Number(priceElement.dataset.basePrice || 0);
       const finalPrice = basePrice + additionalPrice;
-      priceElement.textContent = `$${finalPrice.toFixed(2)}`;
+      priceElement.textContent = `${new Intl.NumberFormat('vi-VN').format(finalPrice)} ₫`;
     };
 
     variantSelect.addEventListener('change', updateDisplayedPrice);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/format.php';
 require_login();
 require_admin();
 $pageTitle = 'Admin Dashboard';
@@ -33,15 +34,15 @@ require_once __DIR__ . '/../includes/header.php';
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <article class="bg-white rounded-lg border border-gray-200 p-4">
       <p class="text-sm text-gray-500">Doanh thu hoàn thành</p>
-      <p class="text-2xl font-semibold mt-2">$<?= number_format((float) $summary['revenue'], 2); ?></p>
+      <p class="text-2xl font-semibold mt-2"><?= format_currency_vnd((float) $summary['revenue']); ?></p>
     </article>
     <article class="bg-white rounded-lg border border-gray-200 p-4">
       <p class="text-sm text-gray-500">Đơn hoàn thành</p>
-      <p class="text-2xl font-semibold mt-2"><?= (int) $summary['total_orders']; ?></p>
+      <p class="text-2xl font-semibold mt-2"><?= format_number_vn((int) $summary['total_orders']); ?></p>
     </article>
     <article class="bg-white rounded-lg border border-gray-200 p-4">
       <p class="text-sm text-gray-500">Đơn mới (pending)</p>
-      <p class="text-2xl font-semibold mt-2"><?= (int) $newOrders['pending_orders']; ?></p>
+      <p class="text-2xl font-semibold mt-2"><?= format_number_vn((int) $newOrders['pending_orders']); ?></p>
     </article>
   </div>
 
@@ -68,8 +69,8 @@ require_once __DIR__ . '/../includes/header.php';
           <?php foreach ($dailyStats as $daily): ?>
             <tr class="border-t border-gray-100">
               <td class="p-2"><?= htmlspecialchars((string) $daily['order_date'], ENT_QUOTES, 'UTF-8'); ?></td>
-              <td class="p-2"><?= (int) $daily['total_orders']; ?></td>
-              <td class="p-2">$<?= number_format((float) $daily['total_revenue'], 2); ?></td>
+              <td class="p-2"><?= format_number_vn((int) $daily['total_orders']); ?></td>
+              <td class="p-2"><?= format_currency_vnd((float) $daily['total_revenue']); ?></td>
             </tr>
           <?php endforeach; ?>
         </tbody>

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/pagination.php';
+require_once __DIR__ . '/includes/format.php';
 $pageTitle = 'Trang chủ | Minimal Store';
 
 $currentPage = max(1, (int) ($_GET['page'] ?? 1));
@@ -51,12 +52,12 @@ require_once __DIR__ . '/includes/header.php';
           <h2 class="font-semibold text-lg line-clamp-1">
             <?= htmlspecialchars((string) $product['name'], ENT_QUOTES, 'UTF-8'); ?>
           </h2>
-          <p class="text-sm text-gray-500 min-h-[44px]">
+          <p class="hidden sm:block text-sm text-gray-500 min-h-[44px]">
             <?= htmlspecialchars((string) mb_strimwidth(strip_tags((string) $product['description']), 0, 95, '...'), ENT_QUOTES, 'UTF-8'); ?>
           </p>
           <div class="flex items-center justify-between">
-            <p class="font-bold">$<?= number_format((float) $product['price'], 2); ?></p>
-            <span class="text-xs text-gray-500">Đã bán: <?= (int) $product['sold_count']; ?></span>
+            <p class="font-bold"><?= format_currency_vnd((float) $product['price']); ?></p>
+            <span class="text-xs text-gray-500">Đã bán: <?= format_number_vn((int) $product['sold_count']); ?></span>
           </div>
           <button
             type="button"

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/format.php';
 require_login();
 
 $orderId = (int) ($_GET['order_id'] ?? 0);
@@ -26,7 +27,7 @@ require_once __DIR__ . '/includes/header.php';
     <h1 class="text-3xl font-bold">Đặt hàng thành công!</h1>
     <p class="text-gray-600">Mã đơn #<?= (int) $order['id']; ?> đã được ghi nhận.</p>
     <div class="bg-gray-50 rounded-lg p-4 text-left text-sm space-y-1">
-      <p><strong>Tổng tiền:</strong> $<?= number_format((float) $order['total_price'], 2); ?></p>
+      <p><strong>Tổng tiền:</strong> <?= format_currency_vnd((float) $order['total_price']); ?></p>
       <p><strong>Phương thức:</strong> <?= htmlspecialchars((string) $order['payment_method'], ENT_QUOTES, 'UTF-8'); ?></p>
       <p><strong>Trạng thái:</strong> <?= htmlspecialchars((string) $order['status'], ENT_QUOTES, 'UTF-8'); ?></p>
     </div>

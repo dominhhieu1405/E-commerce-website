@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/pagination.php';
+require_once __DIR__ . '/../includes/format.php';
 require_login();
 require_admin();
 
@@ -72,8 +73,8 @@ require_once __DIR__ . '/../includes/header.php';
           <td class="p-3"><?= (int) $product['id']; ?></td>
           <td class="p-3"><?= htmlspecialchars((string) $product['name'], ENT_QUOTES, 'UTF-8'); ?></td>
           <td class="p-3"><?= htmlspecialchars((string) ($product['category_name'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
-          <td class="p-3">$<?= number_format((float) $product['price'], 2); ?></td>
-          <td class="p-3"><?= (int) $product['stock']; ?></td>
+          <td class="p-3"><?= format_currency_vnd((float) $product['price']); ?></td>
+          <td class="p-3"><?= format_number_vn((int) $product['stock']); ?></td>
           <td class="p-3 flex gap-2">
             <a href="/admin/product_form.php?id=<?= (int) $product['id']; ?>" class="rounded border px-3 py-1 hover:opacity-80 transition">Sửa</a>
             <form method="post" onsubmit="return confirm('Xóa sản phẩm này?')">

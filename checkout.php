@@ -81,11 +81,11 @@ require_once __DIR__ . '/includes/header.php';
       <div id="checkout-items" class="space-y-3"></div>
       <div class="mt-4 pt-4 border-t border-gray-200 flex justify-between text-sm">
         <span>Phí vận chuyển</span>
-        <span id="shipping-fee">$0.00</span>
+        <span id="shipping-fee">0 ₫</span>
       </div>
       <div class="border-t border-gray-200 mt-4 pt-4 flex justify-between font-semibold">
         <span>Tổng thanh toán</span>
-        <span id="checkout-total">$0.00</span>
+        <span id="checkout-total">0 ₫</span>
       </div>
     </aside>
   </div>

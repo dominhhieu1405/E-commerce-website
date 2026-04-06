@@ -3,11 +3,12 @@ const COOKIE_KEY = 'guest_cart';
 const CHECKOUT_INFO_KEY = 'minimal_store_checkout_info';
 const USER_ID = Number(document.body?.dataset?.userId || 0);
 const SHIPPING_FEE_MAP = {
-  slow: 1.5,
-  standard: 3.0,
-  fast: 6.0,
-  express: 10.0,
+  slow: 15000,
+  standard: 30000,
+  fast: 60000,
+  express: 100000,
 };
+const formatVnd = (value) => `${new Intl.NumberFormat('vi-VN').format(Number(value || 0))} ₫`;
 
 const getCookie = (name) => {
   const value = `; ${document.cookie}`;
@@ -139,8 +140,8 @@ const renderCheckoutItems = async () => {
   const cart = await getCart();
   if (!cart.length) {
     checkoutContainer.innerHTML = '<p class="text-sm text-gray-500">Giỏ hàng đang trống.</p>';
-    totalContainer.textContent = '$0.00';
-    if (shippingFeeContainer) shippingFeeContainer.textContent = '$0.00';
+    totalContainer.textContent = '0 ₫';
+    if (shippingFeeContainer) shippingFeeContainer.textContent = '0 ₫';
     hiddenInput.value = '[]';
     return;
   }
@@ -151,7 +152,7 @@ const renderCheckoutItems = async () => {
       <div class="flex-1">
         <p class="font-medium">${item.name}</p>
         ${item.variant_name || item.variantId ? `<p class="text-xs text-gray-500">Phân loại: ${item.variant_name || 'Biến thể'}</p>` : ''}
-        <p class="text-sm text-gray-500">$${Number(item.price).toFixed(2)}</p>
+        <p class="text-sm text-gray-500">${formatVnd(item.price)}</p>
       </div>
       <span class="text-sm">x${item.quantity}</span>
     </div>
@@ -159,8 +160,8 @@ const renderCheckoutItems = async () => {
 
   const subtotal = cartTotal(cart);
   const shippingFee = getShippingFee(getCurrentShippingMethod());
-  if (shippingFeeContainer) shippingFeeContainer.textContent = `$${shippingFee.toFixed(2)}`;
-  totalContainer.textContent = `$${(subtotal + shippingFee).toFixed(2)}`;
+  if (shippingFeeContainer) shippingFeeContainer.textContent = formatVnd(shippingFee);
+  totalContainer.textContent = formatVnd(subtotal + shippingFee);
   hiddenInput.value = JSON.stringify(cart);
 };
 
@@ -223,6 +224,7 @@ const setupLiveSearch = () => {
   const searchInput = document.querySelector('#live-search-input');
   const resultsContainer = document.querySelector('#live-search-results');
   if (!searchInput || !resultsContainer) return;
+  let activeIndex = -1;
 
   const hideResults = () => {
     resultsContainer.classList.add('hidden');
@@ -230,6 +232,7 @@ const setupLiveSearch = () => {
   };
 
   const renderResults = (items) => {
+    activeIndex = -1;
     if (!items.length) {
       resultsContainer.innerHTML = '<p class="px-3 py-2 text-sm text-gray-500">Không tìm thấy sản phẩm phù hợp.</p>';
       resultsContainer.classList.remove('hidden');
@@ -237,11 +240,11 @@ const setupLiveSearch = () => {
     }
 
     resultsContainer.innerHTML = items.map((item) => `
-      <a href="/product.php?id=${Number(item.id)}" class="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition">
+      <a href="/product.php?id=${Number(item.id)}" class="live-search-item flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition">
         <img src="${item.image_url || ''}" alt="${item.name}" class="h-10 w-10 rounded object-cover border border-gray-200" />
         <div class="min-w-0">
           <p class="text-sm font-medium truncate">${item.name}</p>
-          <p class="text-xs text-gray-500">$${Number(item.price || 0).toFixed(2)}</p>
+          <p class="text-xs text-gray-500">${formatVnd(item.price || 0)}</p>
         </div>
       </a>
     `).join('');
@@ -266,6 +269,31 @@ const setupLiveSearch = () => {
 
   searchInput.addEventListener('input', (event) => {
     fetchResults(event.target.value || '');
+  });
+
+  searchInput.addEventListener('keydown', (event) => {
+    const items = resultsContainer.querySelectorAll('.live-search-item');
+    if (!items.length || resultsContainer.classList.contains('hidden')) return;
+
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      activeIndex += event.key === 'ArrowDown' ? 1 : -1;
+      if (activeIndex >= items.length) activeIndex = 0;
+      if (activeIndex < 0) activeIndex = items.length - 1;
+      items.forEach((item, index) => {
+        item.classList.toggle('bg-gray-100', index === activeIndex);
+      });
+      items[activeIndex]?.scrollIntoView({ block: 'nearest' });
+    } else if (event.key === 'Enter' && activeIndex >= 0) {
+      event.preventDefault();
+      items[activeIndex]?.click();
+    }
+  });
+
+  searchInput.addEventListener('focus', () => {
+    if (resultsContainer.innerHTML.trim()) {
+      resultsContainer.classList.remove('hidden');
+    }
   });
 
   document.addEventListener('click', (event) => {
