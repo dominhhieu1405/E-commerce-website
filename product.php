@@ -70,7 +70,7 @@ require_once __DIR__ . '/includes/header.php';
       <div class="space-y-4">
         <h1 class="text-2xl font-bold"><?= htmlspecialchars((string) $product['name'], ENT_QUOTES, 'UTF-8'); ?></h1>
         <p class="text-gray-600"><?= htmlspecialchars($shortDescription, ENT_QUOTES, 'UTF-8'); ?></p>
-        <p class="text-2xl font-semibold">$<?= number_format((float) $product['price'], 2); ?></p>
+        <p id="product-price" class="text-2xl font-semibold" data-base-price="<?= (float) $product['price']; ?>">$<?= number_format((float) $product['price'], 2); ?></p>
         <p class="text-sm text-gray-500">Tồn kho: <?= (int) $product['stock']; ?> • Đã bán: <?= (int) $product['sold_count']; ?></p>
 
         <?php if ($variants): ?>
@@ -138,6 +138,21 @@ require_once __DIR__ . '/includes/header.php';
       const main = document.querySelector('#main-image');
       if (main) main.src = thumbs[index].src;
     }, 3500);
+  }
+
+  const variantSelect = document.querySelector('#variant-select');
+  const priceElement = document.querySelector('#product-price');
+  if (variantSelect && priceElement) {
+    const updateDisplayedPrice = () => {
+      const selectedOption = variantSelect.selectedOptions[0];
+      const additionalPrice = Number(selectedOption?.dataset?.additionalPrice || 0);
+      const basePrice = Number(priceElement.dataset.basePrice || 0);
+      const finalPrice = basePrice + additionalPrice;
+      priceElement.textContent = `$${finalPrice.toFixed(2)}`;
+    };
+
+    variantSelect.addEventListener('change', updateDisplayedPrice);
+    updateDisplayedPrice();
   }
 </script>
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

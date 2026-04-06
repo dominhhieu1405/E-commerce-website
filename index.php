@@ -37,7 +37,7 @@ require_once __DIR__ . '/includes/header.php';
     <button id="cart-counter" class="rounded-lg bg-black text-white px-4 py-2 text-sm">Giỏ hàng: 0</button>
   </div>
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
     <?php foreach ($products as $product): ?>
       <article class="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
         <a href="/product.php?id=<?= (int) $product['id']; ?>">
