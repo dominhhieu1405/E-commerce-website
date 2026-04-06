@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/pagination.php';
+require_once __DIR__ . '/includes/format.php';
 $pageTitle = 'Tìm kiếm sản phẩm';
 
 $q = trim((string) ($_GET['q'] ?? ''));
@@ -101,11 +102,11 @@ require_once __DIR__ . '/includes/header.php';
     </div>
     <div>
       <label class="text-sm">Giá từ</label>
-      <input type="number" min="0" step="0.01" name="min_price" value="<?= htmlspecialchars((string) ($_GET['min_price'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
+      <input type="number" min="0" step="1" name="min_price" value="<?= htmlspecialchars((string) ($_GET['min_price'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
     </div>
     <div>
       <label class="text-sm">Giá đến</label>
-      <input type="number" min="0" step="0.01" name="max_price" value="<?= htmlspecialchars((string) ($_GET['max_price'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
+      <input type="number" min="0" step="1" name="max_price" value="<?= htmlspecialchars((string) ($_GET['max_price'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
     </div>
     <div>
       <label class="text-sm">Sắp xếp</label>
@@ -146,8 +147,8 @@ require_once __DIR__ . '/includes/header.php';
           <h2 class="font-semibold text-lg"><?= htmlspecialchars((string) $product['name'], ENT_QUOTES, 'UTF-8'); ?></h2>
           <p class="text-sm text-gray-500 min-h-[44px]"><?= htmlspecialchars((string) mb_strimwidth(strip_tags((string) $product['description']), 0, 95, '...'), ENT_QUOTES, 'UTF-8'); ?></p>
           <div class="flex items-center justify-between">
-            <p class="font-bold">$<?= number_format((float) $product['price'], 2); ?></p>
-            <span class="text-xs text-gray-500">Đã bán: <?= (int) $product['sold_count']; ?></span>
+            <p class="font-bold"><?= format_currency_vnd((float) $product['price']); ?></p>
+            <span class="text-xs text-gray-500">Đã bán: <?= format_number_vn((int) $product['sold_count']); ?></span>
           </div>
           <button type="button" class="add-to-cart w-full rounded-lg border border-black px-3 py-2 text-sm font-medium hover:opacity-80 transition" data-id="<?= (int) $product['id']; ?>" data-name="<?= htmlspecialchars((string) $product['name'], ENT_QUOTES, 'UTF-8'); ?>" data-price="<?= (float) $product['price']; ?>" data-image="<?= htmlspecialchars((string) ($product['image_url'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" data-stock="<?= (int) $product['stock']; ?>">Thêm vào giỏ</button>
         </div>
