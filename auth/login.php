@@ -16,12 +16,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = trim((string) ($_POST['email'] ?? ''));
         $password = (string) ($_POST['password'] ?? '');
 
-        $userStmt = $pdo->prepare('SELECT id, username, email, role, password FROM users WHERE email = :email LIMIT 1');
+        $userStmt = $pdo->prepare('SELECT id, username, email, role, password, is_banned FROM users WHERE email = :email LIMIT 1');
         $userStmt->execute(['email' => $email]);
         $user = $userStmt->fetch();
 
         if (!$user || !password_verify($password, (string) $user['password'])) {
             $error = 'Sai thông tin đăng nhập.';
+        } elseif ((int) ($user['is_banned'] ?? 0) === 1) {
+            $error = 'Tài khoản của bạn đã bị khóa.';
         } else {
             login_user($user);
             header('Location: /index.php');

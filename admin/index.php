@@ -15,6 +15,13 @@ $summary = $summaryStmt->fetch() ?: ['total_orders' => 0, 'revenue' => 0];
 $newOrdersStmt = $pdo->query("SELECT COUNT(*) AS pending_orders FROM orders WHERE status = 'pending'");
 $newOrders = $newOrdersStmt->fetch() ?: ['pending_orders' => 0];
 
+
+$userStatsStmt = $pdo->query("SELECT COUNT(*) AS total_users, SUM(CASE WHEN is_banned = 1 THEN 1 ELSE 0 END) AS total_banned FROM users");
+$userStats = $userStatsStmt->fetch() ?: ['total_users' => 0, 'total_banned' => 0];
+
+$reviewStatsStmt = $pdo->query('SELECT COUNT(*) AS total_reviews FROM reviews');
+$reviewStats = $reviewStatsStmt->fetch() ?: ['total_reviews' => 0];
+
 $dailyStatsStmt = $pdo->query(
     "SELECT DATE(created_at) AS order_date,
             COUNT(*) AS total_orders,
@@ -26,12 +33,12 @@ $dailyStatsStmt = $pdo->query(
 );
 $dailyStats = $dailyStatsStmt->fetchAll();
 
-require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/admin_header.php';
 ?>
 <section class="max-w-6xl mx-auto px-4 py-8 space-y-6">
   <h1 class="text-2xl font-bold">Admin Dashboard</h1>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4">
     <article class="bg-white rounded-lg border border-gray-200 p-4">
       <p class="text-sm text-gray-500">Doanh thu hoàn thành</p>
       <p class="text-2xl font-semibold mt-2"><?= format_currency_vnd((float) $summary['revenue']); ?></p>
@@ -44,6 +51,18 @@ require_once __DIR__ . '/../includes/header.php';
       <p class="text-sm text-gray-500">Đơn mới (pending)</p>
       <p class="text-2xl font-semibold mt-2"><?= format_number_vn((int) $newOrders['pending_orders']); ?></p>
     </article>
+    <article class="bg-white rounded-lg border border-gray-200 p-4">
+      <p class="text-sm text-gray-500">Tổng user</p>
+      <p class="text-2xl font-semibold mt-2"><?= format_number_vn((int) $userStats['total_users']); ?></p>
+    </article>
+    <article class="bg-white rounded-lg border border-gray-200 p-4">
+      <p class="text-sm text-gray-500">User bị cấm</p>
+      <p class="text-2xl font-semibold mt-2"><?= format_number_vn((int) $userStats['total_banned']); ?></p>
+    </article>
+    <article class="bg-white rounded-lg border border-gray-200 p-4">
+      <p class="text-sm text-gray-500">Tổng đánh giá</p>
+      <p class="text-2xl font-semibold mt-2"><?= format_number_vn((int) $reviewStats['total_reviews']); ?></p>
+    </article>
   </div>
 
   <div class="flex gap-3">
@@ -51,6 +70,8 @@ require_once __DIR__ . '/../includes/header.php';
     <a href="/admin/product_form.php" class="rounded-lg border border-black px-4 py-2 hover:opacity-80 transition">Thêm sản phẩm</a>
     <a href="/admin/categories.php" class="rounded-lg border border-black px-4 py-2 hover:opacity-80 transition">Quản lý danh mục</a>
     <a href="/admin/orders.php" class="rounded-lg border border-black px-4 py-2 hover:opacity-80 transition">Quản lý đơn hàng</a>
+    <a href="/admin/users.php" class="rounded-lg border border-black px-4 py-2 hover:opacity-80 transition">Quản lý user</a>
+    <a href="/admin/reviews.php" class="rounded-lg border border-black px-4 py-2 hover:opacity-80 transition">Quản lý đánh giá</a>
   </div>
 
   <div class="bg-white rounded-lg border border-gray-200 p-4 md:p-6 space-y-4">
@@ -119,4 +140,4 @@ require_once __DIR__ . '/../includes/header.php';
     });
   }
 </script>
-<?php require_once __DIR__ . '/../includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../includes/admin_footer.php'; ?>

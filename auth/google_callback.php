@@ -73,7 +73,7 @@ if ($googleId === '' || $email === '') {
     exit('Thông tin Google user không hợp lệ.');
 }
 
-$stmt = $pdo->prepare('SELECT id, username, email, role FROM users WHERE google_id = :google_id OR email = :email LIMIT 1');
+$stmt = $pdo->prepare('SELECT id, username, email, role, is_banned FROM users WHERE google_id = :google_id OR email = :email LIMIT 1');
 $stmt->execute([
     'google_id' => $googleId,
     'email' => $email,
@@ -81,6 +81,11 @@ $stmt->execute([
 $existingUser = $stmt->fetch();
 
 if ($existingUser) {
+    if ((int) ($existingUser['is_banned'] ?? 0) === 1) {
+        http_response_code(403);
+        exit('Tài khoản của bạn đã bị khóa.');
+    }
+
     $updateStmt = $pdo->prepare('UPDATE users SET google_id = :google_id WHERE id = :id');
     $updateStmt->execute([
         'google_id' => $googleId,

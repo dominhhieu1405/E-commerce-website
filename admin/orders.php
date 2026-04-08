@@ -40,7 +40,7 @@ $ordersStmt->bindValue(':offset', (int) $pagination['offset'], PDO::PARAM_INT);
 $ordersStmt->execute();
 $orders = $ordersStmt->fetchAll();
 
-require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/admin_header.php';
 ?>
 <section class="max-w-6xl mx-auto px-4 py-8">
   <div class="flex items-center justify-between mb-5">
@@ -88,4 +88,4 @@ require_once __DIR__ . '/../includes/header.php';
 
   <?php render_pagination($pagination); ?>
 </section>
-<?php require_once __DIR__ . '/../includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../includes/admin_footer.php'; ?>

@@ -21,9 +21,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $description = trim((string) ($_POST['description'] ?? ''));
     $price = (float) ($_POST['price'] ?? 0);
     $stock = (int) ($_POST['stock'] ?? 0);
-    $currentImageUrls = json_decode((string) ($_POST['current_image_urls'] ?? '[]'), true);
-    $imageUrls = is_array($currentImageUrls) ? $currentImageUrls : [];
 
+    $currentImageUrlsRaw = json_decode((string) ($_POST['current_image_urls'] ?? '[]'), true);
+    $currentImageUrls = array_values(array_filter(is_array($currentImageUrlsRaw) ? $currentImageUrlsRaw : [], static fn ($url) => is_string($url) && $url !== ''));
+
+    $imageOrderStateRaw = json_decode((string) ($_POST['image_order_state'] ?? '[]'), true);
+    $imageOrderState = is_array($imageOrderStateRaw) ? $imageOrderStateRaw : [];
+
+    $uploadedImagesByIndex = [];
     if (!empty($_FILES['images']['name'][0])) {
         $uploadDir = __DIR__ . '/../uploads/';
         if (!is_dir($uploadDir)) {
@@ -34,15 +39,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!is_uploaded_file($_FILES['images']['tmp_name'][$idx])) {
                 continue;
             }
-            $extension = pathinfo($filename, PATHINFO_EXTENSION);
-            $safeName = uniqid('product_', true) . '.' . strtolower($extension);
+            $extension = pathinfo((string) $filename, PATHINFO_EXTENSION);
+            $safeName = uniqid('product_', true) . '.' . strtolower((string) $extension);
             $targetFile = $uploadDir . $safeName;
             if (move_uploaded_file($_FILES['images']['tmp_name'][$idx], $targetFile)) {
-                $imageUrls[] = '/uploads/' . $safeName;
+                $uploadedImagesByIndex[(string) $idx] = '/uploads/' . $safeName;
             }
         }
     }
 
+    $imageUrls = [];
+    foreach ($imageOrderState as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+
+        $type = (string) ($item['type'] ?? '');
+        if ($type === 'existing') {
+            $value = (string) ($item['value'] ?? '');
+            if (in_array($value, $currentImageUrls, true)) {
+                $imageUrls[] = $value;
+            }
+            continue;
+        }
+
+        if ($type === 'new') {
+            $fileIndex = (string) ($item['fileIndex'] ?? '');
+            if (isset($uploadedImagesByIndex[$fileIndex])) {
+                $imageUrls[] = $uploadedImagesByIndex[$fileIndex];
+            }
+        }
+    }
+
+    if (empty($imageOrderState)) {
+        $imageUrls = $currentImageUrls;
+        foreach ($uploadedImagesByIndex as $newImageUrl) {
+            $imageUrls[] = $newImageUrl;
+        }
+    }
+
+    $imageUrls = array_values(array_unique($imageUrls));
     $imageUrl = $imageUrls[0] ?? null;
 
     if ($id > 0) {
@@ -58,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'description' => $description,
             'price' => $price,
             'image_url' => $imageUrl,
-            'image_urls' => json_encode(array_values($imageUrls), JSON_UNESCAPED_UNICODE),
+            'image_urls' => json_encode($imageUrls, JSON_UNESCAPED_UNICODE),
             'stock' => $stock,
         ]);
     } else {
@@ -72,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'description' => $description,
             'price' => $price,
             'image_url' => $imageUrl,
-            'image_urls' => json_encode(array_values($imageUrls), JSON_UNESCAPED_UNICODE),
+            'image_urls' => json_encode($imageUrls, JSON_UNESCAPED_UNICODE),
             'stock' => $stock,
         ]);
         $id = (int) $pdo->lastInsertId();
@@ -123,20 +159,22 @@ if ($editingId > 0) {
 }
 
 $categories = $pdo->query('SELECT id, name FROM categories ORDER BY name ASC')->fetchAll();
+$initialImageUrlsRaw = json_decode((string) ($productEditing['image_urls'] ?? '[]'), true);
+$initialImageUrls = array_values(array_filter(is_array($initialImageUrlsRaw) ? $initialImageUrlsRaw : [], static fn ($url) => is_string($url) && $url !== ''));
 
-require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/admin_header.php';
 ?>
 <link href="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-lite.min.css" rel="stylesheet">
-<section class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+<section class="space-y-6">
   <div class="flex items-center justify-between">
     <h1 class="text-2xl font-bold"><?= $productEditing ? 'Sửa sản phẩm' : 'Thêm sản phẩm'; ?></h1>
-    <a href="/admin/products.php" class="text-sm hover:opacity-80 transition">← Danh sách sản phẩm</a>
   </div>
 
   <form method="post" enctype="multipart/form-data" class="bg-white rounded-lg border border-gray-200 p-5 space-y-4">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8'); ?>" />
     <input type="hidden" name="id" value="<?= (int) ($productEditing['id'] ?? 0); ?>" />
-    <input type="hidden" name="current_image_urls" value="<?= htmlspecialchars((string) ($productEditing['image_urls'] ?? '[]'), ENT_QUOTES, 'UTF-8'); ?>" />
+    <input id="current-image-urls" type="hidden" name="current_image_urls" value="<?= htmlspecialchars(json_encode($initialImageUrls, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'); ?>" />
+    <input id="image-order-state" type="hidden" name="image_order_state" value="[]" />
 
     <div class="grid md:grid-cols-2 gap-4">
       <div>
@@ -163,9 +201,10 @@ require_once __DIR__ . '/../includes/header.php';
         <input type="number" min="0" name="stock" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" value="<?= htmlspecialchars((string) ($productEditing['stock'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" />
       </div>
       <div class="md:col-span-2">
-        <label class="text-sm">Ảnh sản phẩm (chọn nhiều)</label>
+        <label class="text-sm">Ảnh sản phẩm (có thể kéo thả để đổi vị trí, bấm × để xóa)</label>
         <input id="images-input" type="file" name="images[]" accept="image/*" multiple class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" />
-        <div id="images-preview" class="mt-3 grid grid-cols-3 md:grid-cols-6 gap-2"></div>
+        <p class="text-xs text-gray-500 mt-2">Mọi thay đổi chỉ áp dụng khi bạn nhấn lưu.</p>
+        <div id="images-preview" class="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2"></div>
       </div>
     </div>
 
@@ -226,18 +265,94 @@ require_once __DIR__ . '/../includes/header.php';
 
   const input = document.querySelector('#images-input');
   const preview = document.querySelector('#images-preview');
-  input.addEventListener('change', () => {
-    preview.innerHTML = '';
-    [...input.files].forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = document.createElement('img');
-        img.src = event.target.result;
-        img.className = 'h-20 w-full object-cover rounded border';
-        preview.appendChild(img);
-      };
-      reader.readAsDataURL(file);
+  const imageOrderStateInput = document.querySelector('#image-order-state');
+  const initialImageUrls = <?= json_encode($initialImageUrls, JSON_UNESCAPED_UNICODE); ?>;
+
+  let imageItems = initialImageUrls.map((url) => ({
+    id: `existing-${url}`,
+    type: 'existing',
+    value: url,
+    preview: url
+  }));
+
+  function syncImageOrderState() {
+    const payload = imageItems.map((item) => {
+      if (item.type === 'existing') {
+        return { type: 'existing', value: item.value };
+      }
+
+      return { type: 'new', fileIndex: item.fileIndex };
     });
+
+    imageOrderStateInput.value = JSON.stringify(payload);
+  }
+
+  function renderImagePreview() {
+    preview.innerHTML = '';
+
+    imageItems.forEach((item, index) => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'relative group';
+      wrapper.draggable = true;
+      wrapper.dataset.id = item.id;
+      wrapper.innerHTML = `
+        <img src="${item.preview}" class="h-24 w-full object-cover rounded border border-gray-300 bg-gray-50" alt="preview" />
+        <button type="button" class="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-black text-white text-sm leading-6 image-remove-btn">×</button>
+        <span class="absolute left-1 top-1 text-xs bg-black/70 text-white rounded px-1 py-0.5">${index + 1}</span>
+      `;
+
+      wrapper.querySelector('.image-remove-btn').addEventListener('click', () => {
+        imageItems = imageItems.filter((img) => img.id !== item.id);
+        syncImageOrderState();
+        renderImagePreview();
+      });
+
+      wrapper.addEventListener('dragstart', (event) => {
+        event.dataTransfer.setData('text/plain', item.id);
+      });
+
+      wrapper.addEventListener('dragover', (event) => event.preventDefault());
+      wrapper.addEventListener('drop', (event) => {
+        event.preventDefault();
+        const draggedId = event.dataTransfer.getData('text/plain');
+        if (!draggedId || draggedId === item.id) {
+          return;
+        }
+
+        const fromIndex = imageItems.findIndex((img) => img.id === draggedId);
+        const toIndex = imageItems.findIndex((img) => img.id === item.id);
+        if (fromIndex < 0 || toIndex < 0) {
+          return;
+        }
+
+        const [dragged] = imageItems.splice(fromIndex, 1);
+        imageItems.splice(toIndex, 0, dragged);
+        syncImageOrderState();
+        renderImagePreview();
+      });
+
+      preview.appendChild(wrapper);
+    });
+  }
+
+  input.addEventListener('change', () => {
+    const files = [...input.files];
+    imageItems = imageItems.filter((item) => item.type === 'existing');
+
+    files.forEach((file, idx) => {
+      imageItems.push({
+        id: `new-${idx}-${file.name}`,
+        type: 'new',
+        fileIndex: idx,
+        preview: URL.createObjectURL(file)
+      });
+    });
+
+    syncImageOrderState();
+    renderImagePreview();
   });
+
+  syncImageOrderState();
+  renderImagePreview();
 </script>
-<?php require_once __DIR__ . '/../includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../includes/admin_footer.php'; ?>
