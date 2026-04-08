@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
   address VARCHAR(255) DEFAULT NULL,
   google_id VARCHAR(100) NULL UNIQUE,
   role ENUM('admin', 'customer') NOT NULL DEFAULT 'customer',
+  is_banned TINYINT(1) NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
