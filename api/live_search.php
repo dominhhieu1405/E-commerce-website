@@ -7,7 +7,7 @@ require_once __DIR__ . '/../config/db.php';
 header('Content-Type: application/json');
 
 $q = trim((string) ($_GET['q'] ?? ''));
-if (mb_strlen($q) < 2) {
+if (mb_strlen($q) < 3) {
     echo json_encode(['ok' => true, 'items' => []]);
     exit;
 }
