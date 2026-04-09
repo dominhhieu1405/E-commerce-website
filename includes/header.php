@@ -71,11 +71,11 @@ $user = current_user();
           </div>
 
           <!-- Search -->
-          <div class="flex-1">
-            <form method="get" action="/search.php" class="w-full relative">
+          <div class="hidden lg:block flex-1">
+            <form method="get" action="/search.php" class="w-full relative" data-live-search>
               <div class="flex items-stretch rounded-2xl border-2 border-black bg-white overflow-hidden shadow-sm">
                 <input
-                  id="live-search-input"
+                  data-live-search-input
                   type="text"
                   name="q"
                   placeholder="Tìm sản phẩm, thương hiệu, danh mục..."
@@ -89,7 +89,7 @@ $user = current_user();
                   Tìm kiếm
                 </button>
               </div>
-              <div id="live-search-results" class="hidden absolute left-0 right-0 top-full mt-2 max-h-80 overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg z-50"></div>
+              <div data-live-search-results class="hidden absolute left-0 right-0 top-full mt-2 max-h-80 overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg z-50"></div>
             </form>
 
             <div class="hidden md:flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mt-2 px-1">
@@ -130,6 +130,27 @@ $user = current_user();
     <!-- Navigation -->
     <div class="bg-white">
       <div class="max-w-7xl mx-auto px-4">
+        <div class="py-3 lg:hidden">
+          <form method="get" action="/search.php" class="w-full relative" data-live-search>
+            <div class="flex items-stretch rounded-2xl border-2 border-black bg-white overflow-hidden shadow-sm">
+              <input
+                data-live-search-input
+                type="text"
+                name="q"
+                placeholder="Tìm sản phẩm..."
+                value="<?= htmlspecialchars($_GET['q'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                class="flex-1 px-4 py-3 text-sm outline-none bg-transparent"
+              />
+              <button
+                type="submit"
+                class="bg-black text-white px-5 text-sm font-semibold hover:opacity-90 transition"
+              >
+                Tìm
+              </button>
+            </div>
+            <div data-live-search-results class="hidden absolute left-0 right-0 top-full mt-2 max-h-80 overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg z-50"></div>
+          </form>
+        </div>
         <nav class="flex items-center gap-2 sm:gap-4 overflow-x-auto whitespace-nowrap py-3 text-sm scrollbar-hide">
           <a href="/index.php" class="px-3 py-2 rounded-xl hover:bg-gray-100 transition font-medium">Trang chủ</a>
           <a href="/search.php?q=thời+trang" class="px-3 py-2 rounded-xl hover:bg-gray-100 transition">Thời trang</a>

@@ -221,85 +221,91 @@ const debounce = (fn, wait = 250) => {
 };
 
 const setupLiveSearch = () => {
-  const searchInput = document.querySelector('#live-search-input');
-  const resultsContainer = document.querySelector('#live-search-results');
-  if (!searchInput || !resultsContainer) return;
-  let activeIndex = -1;
+  const searchWidgets = Array.from(document.querySelectorAll('[data-live-search]'));
+  if (!searchWidgets.length) return;
 
-  const hideResults = () => {
-    resultsContainer.classList.add('hidden');
-    resultsContainer.innerHTML = '';
-  };
+  searchWidgets.forEach((widget) => {
+    const searchInput = widget.querySelector('[data-live-search-input]');
+    const resultsContainer = widget.querySelector('[data-live-search-results]');
+    if (!searchInput || !resultsContainer) return;
 
-  const renderResults = (items) => {
-    activeIndex = -1;
-    if (!items.length) {
-      resultsContainer.innerHTML = '<p class="px-3 py-2 text-sm text-gray-500">Không tìm thấy sản phẩm phù hợp.</p>';
+    let activeIndex = -1;
+
+    const hideResults = () => {
+      resultsContainer.classList.add('hidden');
+      resultsContainer.innerHTML = '';
+    };
+
+    const renderResults = (items) => {
+      activeIndex = -1;
+      if (!items.length) {
+        resultsContainer.innerHTML = '<p class="px-3 py-2 text-sm text-gray-500">Không tìm thấy sản phẩm phù hợp.</p>';
+        resultsContainer.classList.remove('hidden');
+        return;
+      }
+
+      resultsContainer.innerHTML = items.map((item) => `
+        <a href="/product.php?id=${Number(item.id)}" class="live-search-item flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition">
+          <img src="${item.image_url || ''}" alt="${item.name}" class="h-10 w-10 rounded object-cover border border-gray-200" />
+          <div class="min-w-0">
+            <p class="text-sm font-medium truncate">${item.name}</p>
+            <p class="text-xs text-gray-500">${formatVnd(item.price || 0)}</p>
+          </div>
+        </a>
+      `).join('');
       resultsContainer.classList.remove('hidden');
-      return;
-    }
+    };
 
-    resultsContainer.innerHTML = items.map((item) => `
-      <a href="/product.php?id=${Number(item.id)}" class="live-search-item flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition">
-        <img src="${item.image_url || ''}" alt="${item.name}" class="h-10 w-10 rounded object-cover border border-gray-200" />
-        <div class="min-w-0">
-          <p class="text-sm font-medium truncate">${item.name}</p>
-          <p class="text-xs text-gray-500">${formatVnd(item.price || 0)}</p>
-        </div>
-      </a>
-    `).join('');
-    resultsContainer.classList.remove('hidden');
-  };
+    const fetchResults = debounce(async (keyword) => {
+      const q = keyword.trim();
+      if (q.length < 3) {
+        hideResults();
+        return;
+      }
 
-  const fetchResults = debounce(async (keyword) => {
-    const q = keyword.trim();
-    if (q.length < 2) {
-      hideResults();
-      return;
-    }
+      try {
+        const response = await fetch(`/api/live_search.php?q=${encodeURIComponent(q)}`);
+        const data = await response.json();
+        renderResults(Array.isArray(data.items) ? data.items : []);
+      } catch {
+        hideResults();
+      }
+    }, 200);
 
-    try {
-      const response = await fetch(`/api/live_search.php?q=${encodeURIComponent(q)}`);
-      const data = await response.json();
-      renderResults(Array.isArray(data.items) ? data.items : []);
-    } catch {
-      hideResults();
-    }
-  }, 200);
+    searchInput.addEventListener('input', (event) => {
+      fetchResults(event.target.value || '');
+    });
 
-  searchInput.addEventListener('input', (event) => {
-    fetchResults(event.target.value || '');
-  });
+    searchInput.addEventListener('keydown', (event) => {
+      const items = resultsContainer.querySelectorAll('.live-search-item');
+      if (!items.length || resultsContainer.classList.contains('hidden')) return;
 
-  searchInput.addEventListener('keydown', (event) => {
-    const items = resultsContainer.querySelectorAll('.live-search-item');
-    if (!items.length || resultsContainer.classList.contains('hidden')) return;
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        activeIndex += event.key === 'ArrowDown' ? 1 : -1;
+        if (activeIndex >= items.length) activeIndex = 0;
+        if (activeIndex < 0) activeIndex = items.length - 1;
+        items.forEach((item, index) => {
+          item.classList.toggle('bg-gray-100', index === activeIndex);
+        });
+        items[activeIndex]?.scrollIntoView({ block: 'nearest' });
+      } else if (event.key === 'Enter' && activeIndex >= 0) {
+        event.preventDefault();
+        items[activeIndex]?.click();
+      }
+    });
 
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-      event.preventDefault();
-      activeIndex += event.key === 'ArrowDown' ? 1 : -1;
-      if (activeIndex >= items.length) activeIndex = 0;
-      if (activeIndex < 0) activeIndex = items.length - 1;
-      items.forEach((item, index) => {
-        item.classList.toggle('bg-gray-100', index === activeIndex);
-      });
-      items[activeIndex]?.scrollIntoView({ block: 'nearest' });
-    } else if (event.key === 'Enter' && activeIndex >= 0) {
-      event.preventDefault();
-      items[activeIndex]?.click();
-    }
-  });
+    searchInput.addEventListener('focus', () => {
+      if (resultsContainer.innerHTML.trim()) {
+        resultsContainer.classList.remove('hidden');
+      }
+    });
 
-  searchInput.addEventListener('focus', () => {
-    if (resultsContainer.innerHTML.trim()) {
-      resultsContainer.classList.remove('hidden');
-    }
-  });
-
-  document.addEventListener('click', (event) => {
-    if (!resultsContainer.contains(event.target) && !searchInput.contains(event.target)) {
-      hideResults();
-    }
+    document.addEventListener('click', (event) => {
+      if (!widget.contains(event.target)) {
+        hideResults();
+      }
+    });
   });
 };
 

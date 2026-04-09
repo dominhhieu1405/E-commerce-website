@@ -27,6 +27,11 @@ require_once __DIR__ . '/includes/header.php';
 ?>
 <section class="max-w-6xl mx-auto px-4 py-8">
   <h1 class="text-2xl font-bold mb-6">Thanh toán</h1>
+  <?php if (!is_logged_in()): ?>
+    <p class="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+      Bạn có thể đặt hàng mà không cần đăng nhập.
+    </p>
+  <?php endif; ?>
 
   <div class="grid lg:grid-cols-2 gap-6">
     <div class="bg-white rounded-lg border border-gray-200 p-5">
